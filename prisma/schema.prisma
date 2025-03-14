@@ -1,0 +1,327 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User model - represents both artists and listeners
+model User {
+  id               String    @id @default(cuid())
+  name             String?
+  email            String    @unique
+  emailVerified    DateTime?
+  password         String?
+  image            String?
+  role             UserRole  @default(LISTENER)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Artist specific fields
+  artistProfile    Artist?
+
+  // Listener specific fields
+  playlists        Playlist[]
+  likedTracks      LikedTrack[]
+  purchases        Purchase[]
+  earnings         Earning[]
+  following        Follow[]        @relation("Follower")
+  followers        Follow[]        @relation("Following")
+  merch            MerchDesign[]
+  comments         Comment[]
+  
+  // Streamer earnings
+  listenerEarnings StreamEarning[] @relation("ListenerEarning")
+}
+
+enum UserRole {
+  ADMIN
+  ARTIST
+  LISTENER
+}
+
+// Artist profile model
+model Artist {
+  id               String    @id @default(cuid())
+  userId           String    @unique
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bio              String?   @db.Text
+  genre            String?
+  website          String?
+  socialLinks      Json?
+  affiliateRate    Float     @default(10) // Default 10% affiliate rate
+  stripeAccountId  String?   // For payments
+  verified         Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Artist content
+  tracks           Track[]
+  albums           Album[]
+  merchandise      Merchandise[]
+  
+  // Artist earnings
+  artistEarnings   StreamEarning[] @relation("ArtistEarning")
+}
+
+// Music tracks
+model Track {
+  id               String    @id @default(cuid())
+  title            String
+  artistId         String
+  artist           Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  albumId          String?
+  album            Album?    @relation(fields: [albumId], references: [id])
+  audioUrl         String
+  coverImage       String?
+  price            Float?    // Null means free
+  bpm              Int?
+  key              String?
+  duration         Int       // Duration in seconds
+  isAIGenerated    Boolean   @default(false)
+  tags             Tag[]
+  isPublic         Boolean   @default(true)
+  plays            Int       @default(0)
+  licenseType      LicenseType @default(STANDARD)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Related data
+  likedBy          LikedTrack[]
+  purchasedIn      PurchaseItem[] @relation("TrackPurchase")
+  comments         Comment[]
+  playlists        PlaylistTrack[]
+  streamEarnings   StreamEarning[]
+}
+
+enum LicenseType {
+  STANDARD
+  PREMIUM
+  EXCLUSIVE
+}
+
+// Albums
+model Album {
+  id               String    @id @default(cuid())
+  title            String
+  artistId         String
+  artist           Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  coverImage       String?
+  releaseDate      DateTime
+  price            Float?
+  description      String?   @db.Text
+  isPublic         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  // Tracks in album
+  tracks           Track[]
+  
+  // Album purchases
+  purchasedIn      PurchaseItem[] @relation("AlbumPurchase")
+}
+
+// Merchandise
+model Merchandise {
+  id               String    @id @default(cuid())
+  name             String
+  artistId         String
+  artist           Artist    @relation(fields: [artistId], references: [id], onDelete: Cascade)
+  description      String?   @db.Text
+  price            Float
+  images           String[]
+  inventory        Int?      // Null means unlimited
+  designerId       String?
+  designer         MerchDesign? @relation(fields: [designerId], references: [id])
+  isActive         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Merchandise purchases
+  purchasedIn      PurchaseItem[] @relation("MerchPurchase")
+}
+
+// Merch designs by users
+model MerchDesign {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name             String
+  imageUrl         String
+  description      String?   @db.Text
+  isApproved       Boolean   @default(false)
+  royaltyRate      Float     @default(10) // 10% royalty by default
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Merchandise using this design
+  merchandise      Merchandise[]
+}
+
+// Playlist model
+model Playlist {
+  id               String    @id @default(cuid())
+  name             String
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  description      String?   @db.Text
+  coverImage       String?
+  isPublic         Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Tracks in playlist
+  tracks           PlaylistTrack[]
+}
+
+// Playlist tracks (many-to-many)
+model PlaylistTrack {
+  id               String    @id @default(cuid())
+  playlistId       String
+  playlist         Playlist  @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  trackId          String
+  track            Track     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  order            Int
+  addedAt          DateTime  @default(now())
+  
+  @@unique([playlistId, trackId])
+}
+
+// Liked tracks
+model LikedTrack {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId          String
+  track            Track     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  likedAt          DateTime  @default(now())
+  
+  @@unique([userId, trackId])
+}
+
+// Follow relationship
+model Follow {
+  id               String    @id @default(cuid())
+  followerId       String
+  follower         User      @relation("Follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followingId      String
+  following        User      @relation("Following", fields: [followingId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  
+  @@unique([followerId, followingId])
+}
+
+// Tags for tracks
+model Tag {
+  id               String    @id @default(cuid())
+  name             String    @unique
+  tracks           Track[]
+  createdAt        DateTime  @default(now())
+}
+
+// Comments on tracks
+model Comment {
+  id               String    @id @default(cuid())
+  content          String    @db.Text
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trackId          String
+  track            Track     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+// Purchase model
+model Purchase {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  total            Float
+  stripePaymentId  String?
+  affiliateId      String?   // User who referred the purchase
+  status           PurchaseStatus @default(PENDING)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Items in the purchase
+  items            PurchaseItem[]
+}
+
+// Purchase item (what was purchased)
+model PurchaseItem {
+  id               String    @id @default(cuid())
+  purchaseId       String
+  purchase         Purchase  @relation(fields: [purchaseId], references: [id], onDelete: Cascade)
+  price            Float
+  quantity         Int       @default(1)
+  
+  // The item can be a track, album, or merchandise
+  trackId          String?
+  track            Track?    @relation("TrackPurchase", fields: [trackId], references: [id])
+  
+  albumId          String?
+  album            Album?    @relation("AlbumPurchase", fields: [albumId], references: [id])
+  
+  merchId          String?
+  merch            Merchandise? @relation("MerchPurchase", fields: [merchId], references: [id])
+  
+  createdAt        DateTime  @default(now())
+}
+
+enum PurchaseStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+// Earnings model
+model Earning {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount           Float
+  type             EarningType
+  description      String?
+  stripeTransferId String?
+  status           EarningStatus @default(PENDING)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
+
+enum EarningType {
+  SALE
+  AFFILIATE
+  STREAM
+  MERCH_DESIGN
+}
+
+enum EarningStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+// Stream earnings (for ad revenue sharing)
+model StreamEarning {
+  id               String    @id @default(cuid())
+  trackId          String
+  track            Track     @relation(fields: [trackId], references: [id], onDelete: Cascade)
+  artistId         String
+  artist           Artist    @relation("ArtistEarning", fields: [artistId], references: [id], onDelete: Cascade)
+  listenerId       String
+  listener         User      @relation("ListenerEarning", fields: [listenerId], references: [id], onDelete: Cascade)
+  adRevenue        Float
+  platformFee      Float     // 10% of total
+  artistShare      Float     // 45% of total (50% of remainder)
+  listenerShare    Float     // 45% of total (50% of remainder)
+  createdAt        DateTime  @default(now())
+}
