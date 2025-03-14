@@ -1,18 +1,8 @@
 import { NextResponse } from 'next/server';
-import { logoutUser } from '@/lib/auth';
 
 export async function POST() {
   try {
-    // Log out the user
-    const result = await logoutUser();
-
-    if (!result.success) {
-      return NextResponse.json(
-        { message: result.error },
-        { status: 400 }
-      );
-    }
-
+    // Mock successful logout
     return NextResponse.json({ message: 'Logout successful' });
   } catch (error) {
     console.error('Logout API error:', error);

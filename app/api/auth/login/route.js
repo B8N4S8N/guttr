@@ -1,5 +1,22 @@
 import { NextResponse } from 'next/server';
-import { loginUser } from '@/lib/auth';
+
+// Mock user data for demo purposes
+const MOCK_USERS = [
+  {
+    id: 'user-1',
+    email: 'artist@example.com',
+    password: 'password123',
+    name: 'Demo Artist',
+    role: 'ARTIST'
+  },
+  {
+    id: 'user-2',
+    email: 'listener@example.com',
+    password: 'password123',
+    name: 'Demo Listener',
+    role: 'LISTENER'
+  }
+];
 
 export async function POST(request) {
   try {
@@ -13,21 +30,22 @@ export async function POST(request) {
       );
     }
 
-    // Authenticate the user
-    const result = await loginUser({ email, password });
+    // Find user in mock data
+    const user = MOCK_USERS.find(u => u.email === email && u.password === password);
 
-    if (!result.success) {
+    if (!user) {
       return NextResponse.json(
-        { message: result.error },
+        { message: 'Invalid email or password' },
         { status: 401 }
       );
     }
 
+    // Mock successful login
     return NextResponse.json({
       message: 'Login successful',
-      userId: result.user.id,
-      name: result.user.name,
-      role: result.user.role
+      userId: user.id,
+      name: user.name,
+      role: user.role
     });
   } catch (error) {
     console.error('Login API error:', error);

@@ -3,7 +3,7 @@ const nextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   experimental: {
-    outputFileTracingRoot: undefined, // Disable file tracing to avoid EPERM errors
+    // outputFileTracingRoot is not valid, remove it
   },
   eslint: {
     // Warning: This allows production builds to successfully complete even if
