@@ -209,14 +209,16 @@ export default function HomePage() {
       skipForward();
     };
     
-    audioRef.current.addEventListener('error', handleError);
-    audioRef.current.addEventListener('ended', handleEnded);
+    // Store reference to avoid the cleanup function using a stale ref
+    const audioElement = audioRef.current;
+    
+    audioElement.addEventListener('error', handleError);
+    audioElement.addEventListener('ended', handleEnded);
     
     return () => {
-      if (audioRef.current) {
-        audioRef.current.removeEventListener('error', handleError);
-        audioRef.current.removeEventListener('ended', handleEnded);
-      }
+      // Use the stored reference in cleanup
+      audioElement.removeEventListener('error', handleError);
+      audioElement.removeEventListener('ended', handleEnded);
     };
   }, [skipForward]);
 
@@ -285,7 +287,7 @@ export default function HomePage() {
 
           <div className="animate-reveal opacity-0 max-w-3xl mx-auto" style={{ animationDelay: '0.4s' }}>
             <p className="text-xl md:text-2xl text-muted-foreground mb-12">
-              GUTTR is revolutionizing the music industry by creating the first platform that's truly owned by both <span className="text-primary font-semibold">artists</span> and <span className="text-secondary font-semibold">listeners</span>. We're combining the best of streaming, distribution, and social media into one ecosystem where everyone benefits.
+              GUTTR is revolutionizing the music industry by creating the first platform that&apos;s truly owned by both <span className="text-primary font-semibold">artists</span> and <span className="text-secondary font-semibold">listeners</span>. We&apos;re combining the best of streaming, distribution, and social media into one ecosystem where everyone benefits.
             </p>
           </div>
 
@@ -414,7 +416,7 @@ export default function HomePage() {
               <span className="text-gradient">Join the Music Revolution</span>
             </h2>
             <p className="text-xl text-muted-foreground mb-12">
-              Whether you're a creator or a fan, GUTTR offers unprecedented opportunities to earn from the music you love. Be part of the first platform that truly values both artists and listeners.
+              Whether you&apos;re a creator or a fan, GUTTR offers unprecedented opportunities to earn from the music you love. Be part of the first platform that truly values both artists and listeners.
             </p>
             <div className="flex flex-col sm:flex-row gap-6 justify-center">
               <Link

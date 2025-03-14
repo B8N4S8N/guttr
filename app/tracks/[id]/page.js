@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import TrackPlayer from '@/components/TrackPlayer';
+import Image from 'next/image';
 
 export default function TrackDetailPage() {
   const params = useParams();
@@ -135,10 +136,13 @@ export default function TrackDetailPage() {
           <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center">
             <div className="h-20 w-20 overflow-hidden rounded-md bg-gradient-to-br from-primary/10 to-secondary/10 sm:h-24 sm:w-24">
               {track.coverImage ? (
-                <img 
+                <Image 
                   src={track.coverImage} 
                   alt={track.title}
+                  width={96}
+                  height={96}
                   className="h-full w-full object-cover"
+                  unoptimized={true}
                 />
               ) : (
                 <div className="flex h-full w-full items-center justify-center">
@@ -348,17 +352,19 @@ export default function TrackDetailPage() {
                 >
                   <div className="h-10 w-10 flex-shrink-0 overflow-hidden rounded bg-muted">
                     {relatedTrack.coverImage ? (
-                      <img 
+                      <Image 
                         src={relatedTrack.coverImage} 
                         alt={relatedTrack.title}
+                        width={40}
+                        height={40}
                         className="h-full w-full object-cover"
+                        unoptimized={true}
                       />
                     ) : (
                       <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary/5 to-secondary/5">
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-muted-foreground">
                           <path d="M9 18V5l12-2v13"></path>
                           <circle cx="6" cy="18" r="3"></circle>
-                          <circle cx="18" cy="16" r="3"></circle>
                         </svg>
                       </div>
                     )}
